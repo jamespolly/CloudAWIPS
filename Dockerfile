@@ -5,20 +5,23 @@
 #####
 
 FROM unidata/cloudstream:centos7
-MAINTAINER Michael James <mjames@ucar.edu>
+LABEL org.opencontainers.image.authors="Michael James <mjames@ucar.edu>"
 
 ###
 # Install latest EL7 development release of AWIPS CAVE 
 ###
 
 USER root
-
-RUN wget -O /etc/yum.repos.d/awips2.repo https://www.unidata.ucar.edu/software/awips2/doc/el7-dev.repo
-RUN yum -y clean all
 RUN groupadd fxalpha && useradd -G fxalpha awips
-RUN yum groupinstall awips2-cave -y
+RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/CentOS-*.repo
+RUN sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/CentOS-*.repo
+RUN sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/CentOS-*.repo
+RUN yum -y clean all
 RUN yum groupinstall "Fonts" -y
 RUN yum install -y gtk2 mesa-libGLU mesa-libGL mesa-dri-drivers glib2
+RUN wget -P ${HOME}/awips_install.sh https://downloads.unidata.ucar.edu/awips2/current/linux/awips_install.sh
+RUN chmod 755 ${HOME}/awips_install.sh/awips_install.sh
+RUN bash ${HOME}/awips_install.sh/awips_install.sh --cave
 USER ${CUSER}
 
 ###
@@ -36,15 +39,15 @@ COPY COPYRIGHT.md ${HOME}/
 ENV COPYRIGHT_FILE COPYRIGHT.md
 ENV README_FILE README.md
 
-###
+##
 # Add the version number to the version file
-###
+##
 
-RUN echo "CloudAWIPS Version: $(rpm -qa |grep awips2-cave-wrapper | cut -d "-" -f 4,5) $(date)" >> $VERSION_FILE
+ RUN echo "CloudAWIPS Version: $(rpm -qa |grep awips2-cave-wrapper | cut -d "-" -f 4,5) $(date)" >> $VERSION_FILE
 
-###
+##
 # Environmental variable control
-###
+##
 
 USER root
 RUN rm -rf /etc/profile.d/awips2.csh
